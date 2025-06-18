@@ -8,7 +8,7 @@ interface Team {
   name: string;
   memberCount: number;
   activeTasks: number;
-  createdAt: string;
+  created_at: string;
 }
 
 interface TeamCardProps {
@@ -33,7 +33,7 @@ const TeamCard = ({ team }: TeamCardProps) => {
           </div>
         </div>
         <div className="text-xs text-gray-400">
-          Created {new Date(team.createdAt).toLocaleDateString()}
+          Created {new Date(team.created_at).toLocaleDateString()}
         </div>
       </div>
       

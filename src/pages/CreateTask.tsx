@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Flag, FileText } from 'lucide-react';
 import Navigation from '../components/Navigation';
-import { toast } from '@/hooks/use-toast';
+import { useCreateTask } from '@/hooks/useTasks';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreateTask = () => {
   const { teamId } = useParams();
@@ -17,47 +19,49 @@ const CreateTask = () => {
     dueDate: '',
     status: 'todo'
   });
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock team members
-  const teamMembers = [
-    { id: '1', name: 'Alice Johnson' },
-    { id: '2', name: 'Bob Smith' },
-    { id: '3', name: 'Carol Davis' },
-    { id: '4', name: 'David Wilson' }
-  ];
+  const createTaskMutation = useCreateTask();
+
+  // Fetch team members
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['team-members', teamId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select(`
+          profiles(username, full_name)
+        `)
+        .eq('team_id', teamId!);
+
+      if (error) throw error;
+      
+      return data.map(member => ({
+        username: member.profiles?.username,
+        name: member.profiles?.full_name || member.profiles?.username || 'Unknown'
+      })).filter(member => member.username);
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.assignedTo) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
       return;
     }
 
-    setIsLoading(true);
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Success!",
-        description: `Task "${formData.title}" has been created and assigned to ${formData.assignedTo}`,
+      await createTaskMutation.mutateAsync({
+        teamId: teamId!,
+        title: formData.title,
+        description: formData.description,
+        assignedTo: formData.assignedTo,
+        priority: formData.priority,
+        dueDate: formData.dueDate,
+        status: formData.status
       });
       
       navigate(`/teams/${teamId}`);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create task. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to create task:', error);
     }
   };
 
@@ -133,7 +137,7 @@ const CreateTask = () => {
                   >
                     <option value="">Select team member</option>
                     {teamMembers.map((member) => (
-                      <option key={member.id} value={member.name}>
+                      <option key={member.username} value={member.username}>
                         {member.name}
                       </option>
                     ))}
@@ -205,15 +209,15 @@ const CreateTask = () => {
               
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={createTaskMutation.isPending}
                 className="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                {isLoading ? (
+                {createTaskMutation.isPending ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 ) : (
                   <Calendar className="w-5 h-5 mr-2" />
                 )}
-                {isLoading ? 'Creating...' : 'Create Task'}
+                {createTaskMutation.isPending ? 'Creating...' : 'Create Task'}
               </button>
             </div>
           </form>

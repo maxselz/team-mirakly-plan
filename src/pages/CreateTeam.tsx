@@ -4,48 +4,30 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import { toast } from '@/hooks/use-toast';
+import { useCreateTeam } from '@/hooks/useTeams';
 
 const CreateTeam = () => {
   const navigate = useNavigate();
   const [teamName, setTeamName] = useState('');
   const [description, setDescription] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const createTeamMutation = useCreateTeam();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a team name",
-        variant: "destructive"
-      });
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call - in real app this would save to database
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newTeamId = Math.random().toString(36).substr(2, 9);
-      
-      toast({
-        title: "Success!",
-        description: `Team "${teamName}" has been created successfully`,
+      const team = await createTeamMutation.mutateAsync({
+        name: teamName.trim(),
+        description: description.trim() || undefined,
       });
       
-      // Redirect to team dashboard
-      navigate(`/teams/${newTeamId}`);
+      navigate(`/teams/${team.id}`);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create team. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      // Error is handled by the mutation
+      console.error('Failed to create team:', error);
     }
   };
 
@@ -112,15 +94,15 @@ const CreateTeam = () => {
               
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={createTeamMutation.isPending}
                 className="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                {isLoading ? (
+                {createTeamMutation.isPending ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 ) : (
                   <Check className="w-5 h-5 mr-2" />
                 )}
-                {isLoading ? 'Creating...' : 'Create Team'}
+                {createTeamMutation.isPending ? 'Creating...' : 'Create Team'}
               </button>
             </div>
           </form>

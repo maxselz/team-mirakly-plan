@@ -1,12 +1,40 @@
+
 import React from 'react';
 import { Plus, Calendar, CheckSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
+import TaskCard from '@/components/TaskCard';
 import { Button } from '@/components/ui/button';
+import { useTasks } from '@/hooks/useTasks';
 
 const Tasks = () => {
-  // For now, showing empty state - will be populated with real data later
-  const tasks: any[] = [];
+  const { data: tasks = [], isLoading, error } = useTasks();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <p className="text-gray-600">Loading tasks...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center text-red-600">
+            <p>Error loading tasks: {error.message}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
@@ -49,7 +77,14 @@ const Tasks = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Tasks will be rendered here when data is available */}
+            {tasks.map((task) => (
+              <div key={task.id} className="space-y-2">
+                <TaskCard task={task} />
+                {task.teamName && (
+                  <p className="text-xs text-gray-500 px-1">Team: {task.teamName}</p>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

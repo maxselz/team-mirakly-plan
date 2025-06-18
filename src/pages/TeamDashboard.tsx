@@ -1,63 +1,70 @@
 
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Users, Plus, Calendar, BarChart3, Settings } from 'lucide-react';
+import { ArrowLeft, Users, Plus, Calendar, Settings } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import TaskCard from '../components/TaskCard';
+import { useTeam, useUpdateTeam } from '@/hooks/useTeam';
+import { useTasks } from '@/hooks/useTasks';
 
 const TeamDashboard = () => {
   const { teamId } = useParams();
   const [activeTab, setActiveTab] = useState('tasks');
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
-  // Mock data - in real app this would come from database
-  const team = {
-    id: teamId,
-    name: 'Product Development',
-    description: 'Building amazing products for our users',
-    memberCount: 8,
-    members: [
-      { id: '1', name: 'Alice Johnson', role: 'Team Lead' },
-      { id: '2', name: 'Bob Smith', role: 'Developer' },
-      { id: '3', name: 'Carol Davis', role: 'Designer' },
-      { id: '4', name: 'David Wilson', role: 'Developer' }
-    ]
-  };
+  const { data: team, isLoading: teamLoading } = useTeam(teamId!);
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(teamId);
+  const updateTeamMutation = useUpdateTeam();
 
-  const tasks = [
-    {
-      id: '1',
-      title: 'Redesign user dashboard',
-      description: 'Update the main dashboard with new design system components and improved user experience',
-      status: 'in-progress' as const,
-      assignedTo: 'Carol Davis',
-      priority: 'high' as const,
-      dueDate: '2024-07-15'
-    },
-    {
-      id: '2',
-      title: 'API integration for notifications',
-      description: 'Implement real-time notification system using WebSocket API',
-      status: 'todo' as const,
-      assignedTo: 'Bob Smith',
-      priority: 'medium' as const,
-      dueDate: '2024-07-20'
-    },
-    {
-      id: '3',
-      title: 'User testing session setup',
-      description: 'Organize and conduct user testing sessions for the new features',
-      status: 'done' as const,
-      assignedTo: 'Alice Johnson',
-      priority: 'low' as const,
-      dueDate: '2024-07-10'
-    }
-  ];
+  if (teamLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <p className="text-gray-600">Loading team...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center text-red-600">
+            <p>Team not found</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'tasks', name: 'Tasks', icon: Calendar },
     { id: 'members', name: 'Members', icon: Users },
     { id: 'settings', name: 'Settings', icon: Settings }
   ];
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateTeamMutation.mutateAsync({
+        id: team.id,
+        name: editName,
+        description: editDescription,
+      });
+      setEditMode(false);
+    } catch (error) {
+      console.error('Failed to update team:', error);
+    }
+  };
+
+  const activeTasks = tasks.filter(t => t.status !== 'done');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,7 +86,7 @@ const TeamDashboard = () => {
               <p className="text-gray-600">{team.description}</p>
               <div className="flex items-center mt-2 text-sm text-gray-500">
                 <Users className="w-4 h-4 mr-1" />
-                {team.memberCount} members
+                {team.members?.length || 0} members
               </div>
             </div>
             
@@ -122,11 +129,15 @@ const TeamDashboard = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-medium text-gray-900">Team Tasks</h3>
                   <div className="text-sm text-gray-500">
-                    {tasks.filter(t => t.status !== 'done').length} active tasks
+                    {activeTasks.length} active tasks
                   </div>
                 </div>
                 
-                {tasks.length === 0 ? (
+                {tasksLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Loading tasks...</p>
+                  </div>
+                ) : tasks.length === 0 ? (
                   <div className="text-center py-12">
                     <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h4 className="text-lg font-medium text-gray-900 mb-2">No tasks yet</h4>
@@ -160,7 +171,7 @@ const TeamDashboard = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {team.members.map((member) => (
+                  {team.members?.map((member) => (
                     <div key={member.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
@@ -177,7 +188,11 @@ const TeamDashboard = () => {
                         <Settings className="w-4 h-4" />
                       </button>
                     </div>
-                  ))}
+                  )) || (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No members found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -185,29 +200,68 @@ const TeamDashboard = () => {
             {activeTab === 'settings' && (
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-6">Team Settings</h3>
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
-                    <input
-                      type="text"
-                      value={team.name}
-                      className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                {editMode ? (
+                  <form onSubmit={handleSaveSettings} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        rows={3}
+                        className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-4 pt-4">
+                      <button
+                        type="submit"
+                        disabled={updateTeamMutation.isPending}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-colors duration-200"
+                      >
+                        {updateTeamMutation.isPending ? 'Saving...' : 'Save Changes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditMode(false)}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
+                      <p className="text-gray-900">{team.name}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <p className="text-gray-900">{team.description || 'No description provided'}</p>
+                    </div>
+                    <div className="pt-4">
+                      <button
+                        onClick={() => {
+                          setEditName(team.name);
+                          setEditDescription(team.description || '');
+                          setEditMode(true);
+                        }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors duration-200"
+                      >
+                        Edit Team
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea
-                      value={team.description}
-                      rows={3}
-                      className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                  <div className="pt-4">
-                    <button className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors duration-200">
-                      Save Changes
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </div>
