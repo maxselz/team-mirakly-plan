@@ -16,8 +16,7 @@ const Auth = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    fullName: '',
-    email: ''
+    fullName: ''
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,8 +58,11 @@ const Auth = () => {
         throw new Error('Username already exists');
       }
 
+      // Generate a temporary email for Supabase auth (since it requires email)
+      const tempEmail = `${formData.username}@temp.local`;
+
       const { error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: tempEmail,
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/teams`,
@@ -75,7 +77,7 @@ const Auth = () => {
 
       toast({
         title: "Account created successfully!",
-        description: "Please check your email to confirm your account.",
+        description: "You can now sign in with your username and password.",
       });
     } catch (error: any) {
       toast({
@@ -235,23 +237,6 @@ const Auth = () => {
                         placeholder="Choose a username"
                         className="pl-10"
                         value={formData.username}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="signup-email"
-                        name="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        className="pl-10"
-                        value={formData.email}
                         onChange={handleInputChange}
                         required
                       />
