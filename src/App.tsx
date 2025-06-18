@@ -4,7 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import Teams from "./pages/Teams";
 import CreateTeam from "./pages/CreateTeam";
 import TeamDashboard from "./pages/TeamDashboard";
@@ -20,19 +23,45 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/teams/create" element={<CreateTeam />} />
-          <Route path="/teams/:teamId" element={<TeamDashboard />} />
-          <Route path="/teams/:teamId/create-task" element={<CreateTask />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/roadmap" element={<Roadmap />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/teams" element={
+              <ProtectedRoute>
+                <Teams />
+              </ProtectedRoute>
+            } />
+            <Route path="/teams/create" element={
+              <ProtectedRoute>
+                <CreateTeam />
+              </ProtectedRoute>
+            } />
+            <Route path="/teams/:teamId" element={
+              <ProtectedRoute>
+                <TeamDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/teams/:teamId/create-task" element={
+              <ProtectedRoute>
+                <CreateTask />
+              </ProtectedRoute>
+            } />
+            <Route path="/tasks" element={
+              <ProtectedRoute>
+                <Tasks />
+              </ProtectedRoute>
+            } />
+            <Route path="/roadmap" element={
+              <ProtectedRoute>
+                <Roadmap />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

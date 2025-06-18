@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowRight, Users, Calendar, BarChart3, Check, Target, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -45,7 +44,7 @@ const Index = () => {
             </div>
             
             <Link
-              to="/teams"
+              to="/auth"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               Get Started
@@ -177,7 +176,7 @@ const Index = () => {
           </p>
           
           <Link
-            to="/teams"
+            to="/auth"
             className="inline-flex items-center px-8 py-4 border-2 border-white text-lg font-medium rounded-lg text-purple-600 bg-white hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             <Zap className="w-5 h-5 mr-2" />
