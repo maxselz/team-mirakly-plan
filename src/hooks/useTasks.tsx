@@ -12,7 +12,7 @@ export const useTasks = (teamId?: string) => {
         .select(`
           *,
           assigned_profile:profiles!tasks_assigned_to_fkey(full_name, username),
-          team:teams(name)
+          team:teams!tasks_team_id_fkey(name)
         `);
 
       if (teamId) {
