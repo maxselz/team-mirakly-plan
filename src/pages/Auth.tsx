@@ -8,15 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, User, Lock } from 'lucide-react';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
-    fullName: ''
+    fullName: '',
+    email: ''
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,18 +33,40 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
+  const findUserByUsername = async (username: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('username', username)
+      .single();
+    
+    if (error) {
+      console.log('User not found:', error);
+      return null;
+    }
+    
+    return data?.email;
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Check if username already exists
+      const existingUser = await findUserByUsername(formData.username);
+      if (existingUser) {
+        throw new Error('Username already exists');
+      }
+
       const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/teams`,
           data: {
-            full_name: formData.fullName
+            full_name: formData.fullName,
+            username: formData.username
           }
         }
       });
@@ -70,8 +93,14 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Find email by username
+      const email = await findUserByUsername(formData.username);
+      if (!email) {
+        throw new Error('Username not found');
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: email,
         password: formData.password,
       });
 
@@ -126,16 +155,16 @@ const Auth = () => {
               <TabsContent value="signin" className="space-y-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-username">Username</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
-                        id="signin-email"
-                        name="email"
-                        type="email"
-                        placeholder="Enter your email"
+                        id="signin-username"
+                        name="username"
+                        type="text"
+                        placeholder="Enter your username"
                         className="pl-10"
-                        value={formData.email}
+                        value={formData.username}
                         onChange={handleInputChange}
                         required
                       />
@@ -194,11 +223,28 @@ const Auth = () => {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-username">Username</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signup-username"
+                        name="username"
+                        type="text"
+                        placeholder="Choose a username"
+                        className="pl-10"
+                        value={formData.username}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="signup-email"
                         name="email"
