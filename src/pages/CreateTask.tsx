@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTeam } from '@/hooks/useTeam';
@@ -180,9 +181,9 @@ const CreateTask = () => {
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                disabled={createTask.isLoading || teamLoading}
+                disabled={createTask.isPending || teamLoading}
               >
-                {createTask.isLoading ? "Creating task..." : "Create Task"}
+                {createTask.isPending ? "Creating task..." : "Create Task"}
               </Button>
             </form>
           </CardContent>

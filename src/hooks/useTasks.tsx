@@ -11,7 +11,6 @@ export const useTasks = (teamId?: string) => {
         .from('tasks')
         .select(`
           *,
-          assigned_profile:profiles!tasks_assigned_to_fkey(full_name, username),
           team:teams!tasks_team_id_fkey(name)
         `);
 
@@ -23,13 +22,31 @@ export const useTasks = (teamId?: string) => {
 
       if (error) throw error;
       
-      return data.map(task => ({
-        ...task,
-        status: task.status as 'todo' | 'in-progress' | 'done',
-        priority: task.priority as 'low' | 'medium' | 'high',
-        assignedTo: task.assigned_profile?.full_name || task.assigned_profile?.username || 'Unassigned',
-        teamName: task.team?.name
-      }));
+      // Récupérer les profils séparément pour éviter les problèmes de relation
+      const taskIds = data?.map(task => task.assigned_to).filter(Boolean) || [];
+      let profiles = [];
+      
+      if (taskIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', taskIds);
+        
+        if (!profilesError && profilesData) {
+          profiles = profilesData;
+        }
+      }
+      
+      return data?.map(task => {
+        const assignedProfile = profiles.find(p => p.id === task.assigned_to);
+        return {
+          ...task,
+          status: task.status as 'todo' | 'in-progress' | 'done',
+          priority: task.priority as 'low' | 'medium' | 'high',
+          assignedTo: assignedProfile?.full_name || assignedProfile?.username || 'Unassigned',
+          teamName: task.team?.name
+        };
+      }) || [];
     },
   });
 };

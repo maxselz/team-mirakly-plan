@@ -15,7 +15,7 @@ export const useTeam = (teamId: string) => {
             id,
             role,
             joined_at,
-            profiles!team_members_user_id_fkey(full_name, username)
+            user_id
           )
         `)
         .eq('id', teamId)
@@ -23,14 +23,32 @@ export const useTeam = (teamId: string) => {
 
       if (error) throw error;
       
+      // Récupérer les profils séparément
+      const userIds = data.team_members?.map(member => member.user_id) || [];
+      let profiles = [];
+      
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', userIds);
+        
+        if (!profilesError && profilesData) {
+          profiles = profilesData;
+        }
+      }
+      
       return {
         ...data,
-        members: data.team_members.map(member => ({
-          id: member.id,
-          name: member.profiles?.full_name || member.profiles?.username || 'Unknown',
-          role: member.role,
-          joinedAt: member.joined_at
-        }))
+        members: data.team_members?.map(member => {
+          const profile = profiles.find(p => p.id === member.user_id);
+          return {
+            id: member.id,
+            name: profile?.full_name || profile?.username || 'Unknown',
+            role: member.role,
+            joinedAt: member.joined_at
+          };
+        }) || []
       };
     },
   });
