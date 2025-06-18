@@ -25,6 +25,8 @@ export const useTasks = (teamId?: string) => {
       
       return data.map(task => ({
         ...task,
+        status: task.status as 'todo' | 'in-progress' | 'done',
+        priority: task.priority as 'low' | 'medium' | 'high',
         assignedTo: task.assigned_profile?.full_name || task.assigned_profile?.username || 'Unassigned',
         teamName: task.team?.name
       }));

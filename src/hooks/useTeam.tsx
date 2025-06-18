@@ -15,7 +15,7 @@ export const useTeam = (teamId: string) => {
             id,
             role,
             joined_at,
-            profiles(full_name, username)
+            profiles!team_members_user_id_fkey(full_name, username)
           )
         `)
         .eq('id', teamId)

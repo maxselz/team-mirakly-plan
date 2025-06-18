@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Flag, FileText } from 'lucide-react';
@@ -29,7 +28,7 @@ const CreateTask = () => {
       const { data, error } = await supabase
         .from('team_members')
         .select(`
-          profiles(username, full_name)
+          profiles!team_members_user_id_fkey(username, full_name)
         `)
         .eq('team_id', teamId!);
 
