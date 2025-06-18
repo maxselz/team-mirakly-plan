@@ -30,7 +30,7 @@ export const useTeam = (teamId: string) => {
       if (userIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, username')
+          .select('id, username')
           .in('id', userIds);
         
         if (!profilesError && profilesData) {
@@ -44,7 +44,7 @@ export const useTeam = (teamId: string) => {
           const profile = profiles.find(p => p.id === member.user_id);
           return {
             id: member.id,
-            name: profile?.full_name || profile?.username || 'Unknown',
+            name: profile?.username || 'Unknown',
             role: member.role,
             joinedAt: member.joined_at
           };
@@ -74,14 +74,14 @@ export const useUpdateTeam = () => {
       queryClient.invalidateQueries({ queryKey: ['team', data.id] });
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       toast({
-        title: "Success!",
-        description: "Team updated successfully",
+        title: "Succès !",
+        description: "Équipe mise à jour avec succès",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Erreur",
         description: error.message,
       });
     },

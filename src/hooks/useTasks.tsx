@@ -29,7 +29,7 @@ export const useTasks = (teamId?: string) => {
       if (taskIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, username')
+          .select('id, username')
           .in('id', taskIds);
         
         if (!profilesError && profilesData) {
@@ -43,7 +43,7 @@ export const useTasks = (teamId?: string) => {
           ...task,
           status: task.status as 'todo' | 'in-progress' | 'done',
           priority: task.priority as 'low' | 'medium' | 'high',
-          assignedTo: assignedProfile?.full_name || assignedProfile?.username || 'Unassigned',
+          assignedTo: assignedProfile?.username || 'Unassigned',
           teamName: task.team?.name
         };
       }) || [];
@@ -97,14 +97,14 @@ export const useCreateTask = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['tasks', data.team_id] });
       toast({
-        title: "Success!",
-        description: "Task created successfully",
+        title: "Succès !",
+        description: "Tâche créée avec succès",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Erreur",
         description: error.message,
       });
     },
@@ -131,14 +131,14 @@ export const useUpdateTask = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['tasks', data.team_id] });
       toast({
-        title: "Success!",
-        description: "Task updated successfully",
+        title: "Succès !",
+        description: "Tâche mise à jour avec succès",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Erreur",
         description: error.message,
       });
     },

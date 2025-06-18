@@ -18,8 +18,8 @@ const Navigation = () => {
   const { user, signOut } = useAuth();
 
   const navItems = [
-    { name: 'Teams', href: '/teams', icon: Users },
-    { name: 'Tasks', href: '/tasks', icon: Calendar },
+    { name: 'Équipes', href: '/teams', icon: Users },
+    { name: 'Tâches', href: '/tasks', icon: Calendar },
     { name: 'Roadmap', href: '/roadmap', icon: BarChart3 },
   ];
 
@@ -28,8 +28,12 @@ const Navigation = () => {
   };
 
   const getUserInitials = () => {
-    if (!user?.email) return 'U';
-    return user.email.charAt(0).toUpperCase();
+    if (!user?.user_metadata?.username) return 'U';
+    return user.user_metadata.username.charAt(0).toUpperCase();
+  };
+
+  const getUsername = () => {
+    return user?.user_metadata?.username || 'Utilisateur';
   };
 
   return (
@@ -74,7 +78,7 @@ const Navigation = () => {
               className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create Team
+              Créer une équipe
             </Link>
             
             <DropdownMenu>
@@ -89,20 +93,20 @@ const Navigation = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 shadow-lg border border-gray-200/50" align="end" forceMount>
                 <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none">{user?.email}</p>
+                  <p className="text-sm font-medium leading-none">{getUsername()}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
+                    @{getUsername()}
                   </p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
-                  Profile
+                  Profil
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
+                  Se déconnecter
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

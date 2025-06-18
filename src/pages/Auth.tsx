@@ -15,8 +15,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
-    password: '',
-    fullName: ''
+    password: ''
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,7 +34,7 @@ const Auth = () => {
   const findUserByUsername = async (username: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('email')
+      .select('id')
       .eq('username', username)
       .single();
     
@@ -44,7 +43,7 @@ const Auth = () => {
       return null;
     }
     
-    return data?.email;
+    return data?.id;
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -52,37 +51,22 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      // Check if username already exists
-      const existingUser = await findUserByUsername(formData.username);
-      if (existingUser) {
-        throw new Error('Username already exists');
-      }
-
-      // Generate a temporary email for Supabase auth (since it requires email)
-      const tempEmail = `${formData.username}@temp.local`;
-
-      const { error } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/teams`,
-          data: {
-            full_name: formData.fullName,
-            username: formData.username
-          }
-        }
+      // Utiliser la fonction de base de données pour créer l'utilisateur
+      const { data, error } = await supabase.rpc('create_user_with_password', {
+        p_username: formData.username,
+        p_password: formData.password
       });
 
       if (error) throw error;
 
       toast({
-        title: "Account created successfully!",
-        description: "You can now sign in with your username and password.",
+        title: "Compte créé avec succès !",
+        description: "Vous pouvez maintenant vous connecter avec votre nom d'utilisateur et mot de passe.",
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error creating account",
+        title: "Erreur lors de la création du compte",
         description: error.message,
       });
     } finally {
@@ -95,14 +79,17 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      // Find email by username
-      const email = await findUserByUsername(formData.username);
-      if (!email) {
-        throw new Error('Username not found');
+      // Trouver l'utilisateur par nom d'utilisateur
+      const userId = await findUserByUsername(formData.username);
+      if (!userId) {
+        throw new Error('Nom d\'utilisateur non trouvé');
       }
 
+      // Générer l'email temporaire pour Supabase auth
+      const tempEmail = `${formData.username}@temp.local`;
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: email,
+        email: tempEmail,
         password: formData.password,
       });
 
@@ -112,7 +99,7 @@ const Auth = () => {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error signing in",
+        title: "Erreur de connexion",
         description: error.message,
       });
     } finally {
@@ -137,34 +124,34 @@ const Auth = () => {
             </div>
             <span className="text-2xl font-bold text-gray-900">Mirakly</span>
           </div>
-          <p className="text-gray-600">Transform your team collaboration</p>
+          <p className="text-gray-600">Transformez votre collaboration d'équipe</p>
         </div>
 
         <Card className="shadow-xl border-0">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Welcome</CardTitle>
+            <CardTitle className="text-2xl text-center">Bienvenue</CardTitle>
             <CardDescription className="text-center">
-              Sign in to your account or create a new one
+              Connectez-vous à votre compte ou créez-en un nouveau
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">Connexion</TabsTrigger>
+                <TabsTrigger value="signup">Inscription</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin" className="space-y-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-username">Username</Label>
+                    <Label htmlFor="signin-username">Nom d'utilisateur</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="signin-username"
                         name="username"
                         type="text"
-                        placeholder="Enter your username"
+                        placeholder="Entrez votre nom d'utilisateur"
                         className="pl-10"
                         value={formData.username}
                         onChange={handleInputChange}
@@ -174,14 +161,14 @@ const Auth = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">Mot de passe</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="signin-password"
                         name="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
+                        placeholder="Entrez votre mot de passe"
                         className="pl-10 pr-10"
                         value={formData.password}
                         onChange={handleInputChange}
@@ -202,7 +189,7 @@ const Auth = () => {
                     className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? "Connexion..." : "Se connecter"}
                   </Button>
                 </form>
               </TabsContent>
@@ -210,31 +197,14 @@ const Auth = () => {
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="signup-name"
-                        name="fullName"
-                        type="text"
-                        placeholder="Enter your full name"
-                        className="pl-10"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-username">Username</Label>
+                    <Label htmlFor="signup-username">Nom d'utilisateur</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="signup-username"
                         name="username"
                         type="text"
-                        placeholder="Choose a username"
+                        placeholder="Choisissez un nom d'utilisateur"
                         className="pl-10"
                         value={formData.username}
                         onChange={handleInputChange}
@@ -244,14 +214,14 @@ const Auth = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">Mot de passe</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="signup-password"
                         name="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Create a password (min. 6 characters)"
+                        placeholder="Créez un mot de passe (min. 6 caractères)"
                         className="pl-10 pr-10"
                         value={formData.password}
                         onChange={handleInputChange}
@@ -273,7 +243,7 @@ const Auth = () => {
                     className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {isLoading ? "Création du compte..." : "Créer un compte"}
                   </Button>
                 </form>
               </TabsContent>
